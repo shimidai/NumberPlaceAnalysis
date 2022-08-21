@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  client:
+    container_name: number_place
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./app/:/app/
+    ports:
+      - 3000:3000
+    tty: true
