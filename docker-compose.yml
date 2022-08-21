@@ -9,5 +9,5 @@ services:
     volumes:
       - ./app/:/app/
     ports:
-      - 3000:3000
+      - ${NUMBER_PLACE_ANALYSIS_APPLICATION_PORT}:3000
     tty: true
