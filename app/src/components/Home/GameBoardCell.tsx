@@ -34,9 +34,7 @@ const GameBoardCell: React.FC<Props> = ({
 
         <InputCell
           type="number"
-          min={1}
-          max={9}
-          value={value ? value : undefined}
+          value={value ? value : ''}
           onChange={e => onChangeCell(e.target.value)}
         />
       </Container>
@@ -84,19 +82,9 @@ const InternalCell = styled.div<{ isShow: boolean }>`
 `
 
 const InputCell = styled.input`
-  /* reset css start */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  font: inherit;
-  outline: none;
-  padding: 0;
-  margin: 0;
-  /* reset css end */
+  position: absolute;
+  top: 0;
+  left: 0;
   height: 0px;
   width: 0px;
-  font-size: 1px;
 `

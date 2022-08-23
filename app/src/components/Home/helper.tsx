@@ -1,3 +1,5 @@
+type BoardType = (number | null)[][]
+
 const group_map = [
   [0, 0, 0, 1, 1, 1, 2, 2, 2],
   [0, 0, 0, 1, 1, 1, 2, 2, 2],
@@ -24,7 +26,7 @@ const getIndexesByGroupID = (id: number): number[][] => {
   return list
 }
 
-const arrayCopy = (arr: (number | null)[][]): (number | null)[][] => {
+const arrayCopy = (arr: BoardType): BoardType => {
   const copied = new Array(9)
   for (let i = 0; i < 9; i++) copied[i] = [...arr[i]]
   return copied
@@ -33,18 +35,11 @@ const arrayCopy = (arr: (number | null)[][]): (number | null)[][] => {
 const _filterNotNull = (list: (number | null)[]): number[] =>
   list.filter(v => v !== null) as number[]
 
-const getCandidate = (
-  board: (number | null)[][],
-  ri: number,
-  ci: number
-): number[] => {
+const getCandidate = (board: BoardType, ri: number, ci: number): number[] => {
   const r_candidate = _filterNotNull(board[ri])
-  // 列に関して選択済みの数字一覧
   const c_candidate = _filterNotNull(board.map(row => row[ci]))
-  // グループに関して選択済みの数字一覧
-  const g_id = getGroupID(ri, ci)
   const g_candidate = _filterNotNull(
-    getIndexesByGroupID(g_id).map(idx => board[idx[0]][idx[1]])
+    getIndexesByGroupID(getGroupID(ri, ci)).map(idx => board[idx[0]][idx[1]])
   )
 
   const tmp_list: number[] = []
@@ -56,7 +51,7 @@ const getCandidate = (
 }
 
 const getNextCellId = (
-  board: (number | null)[][]
+  board: BoardType
 ): { ri: number; ci: number; candidate: number[] } => {
   let _ri = 0
   let _ci = 0
@@ -79,17 +74,7 @@ const getNextCellId = (
   return { ri: _ri, ci: _ci, candidate: candidate }
 }
 
-const countBlankCell = (board: (number | null)[][]): number => {
-  let count = 0
-  for (let ri = 0; ri < 9; ri++) {
-    for (let ci = 0; ci < 9; ci++) {
-      if (board[ri][ci] === null) count += 1
-    }
-  }
-  return count
-}
-
-const countFilledCell = (board: (number | null)[][]): number => {
+const countFilledCell = (board: BoardType): number => {
   let count = 0
   for (let ri = 0; ri < 9; ri++) {
     for (let ci = 0; ci < 9; ci++) {
@@ -99,12 +84,78 @@ const countFilledCell = (board: (number | null)[][]): number => {
   return count
 }
 
+const sleep = (waitTime: number) =>
+  new Promise(resolve => setTimeout(resolve, waitTime))
+
+/**
+ * 解析を途中でキャンセルした際に true となる
+ */
+let cancelFlag = false
+
+const setCancelFlag = (): void => {
+  cancelFlag = true
+}
+const resetCancelFlag = (): void => {
+  cancelFlag = false
+}
+
+const _dfsWithAnimation = async (
+  filledCount: number,
+  board: BoardType,
+  setBoard: (board: BoardType) => void
+): Promise<BoardType | null> => {
+  if (cancelFlag) return null
+  setBoard(board)
+  await sleep(5)
+  const { ri, ci, candidate } = getNextCellId(board)
+  for (let i = 0; i < candidate.length; i++) {
+    const tmp = arrayCopy(board)
+    tmp[ri][ci] = candidate[i]
+    if (filledCount + 1 == 81) return tmp
+    const board_ = await _dfsWithAnimation(filledCount + 1, tmp, setBoard)
+    if (board_ !== null) return board_
+  }
+  return null
+}
+
+const _dfsWithoutAnimation = (
+  filledCount: number,
+  board: BoardType
+): BoardType | null => {
+  if (cancelFlag) return null
+  const { ri, ci, candidate } = getNextCellId(board)
+  for (let i = 0; i < candidate.length; i++) {
+    const tmp = arrayCopy(board)
+    tmp[ri][ci] = candidate[i]
+    if (filledCount + 1 == 81) return tmp
+    const board_ = _dfsWithoutAnimation(filledCount + 1, tmp)
+    if (board_ !== null) return board_
+  }
+  return null
+}
+
+const dfs = async (
+  withAnimation: boolean,
+  filledCount: number,
+  board: BoardType,
+  setBoard: (board_: BoardType) => void
+): Promise<void> => {
+  let board_: BoardType | null = null
+  if (withAnimation) {
+    board_ = await _dfsWithAnimation(filledCount, board, setBoard)
+  } else {
+    board_ = _dfsWithoutAnimation(filledCount, board)
+  }
+  if (board_ !== null) setBoard(board_)
+  else if (!cancelFlag) window.alert('解が得られませんでした')
+}
+
 export {
+  dfs,
+  setCancelFlag,
+  resetCancelFlag,
   arrayCopy,
   getGroupID,
-  getIndexesByGroupID,
   getCandidate,
-  getNextCellId,
-  countBlankCell,
   countFilledCell,
 }
